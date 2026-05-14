@@ -2,8 +2,7 @@
 # Run as Administrator — registers a Task Scheduler job that fires on WiFi connect
 # Place at: E:\Projects\Register-NetworkTrigger.ps1
 
-# ✅ Fixed: correct path to your script
-$scriptPath = "E:\Projects\auto-staticip\Set-StaticIP.ps1"
+$scriptPath = Join-Path $PSScriptRoot "Set-StaticIP.ps1"
 $taskName   = "SetStaticIPOnWiFiConnect"
 
 # ✅ Fixed: embed current user so the task runs under the right account
