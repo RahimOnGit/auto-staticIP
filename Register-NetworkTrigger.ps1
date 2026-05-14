@@ -3,8 +3,7 @@
 # Place at: E:\Projects\Register-NetworkTrigger.ps1
 
 $scriptPath = Join-Path $PSScriptRoot "Set-StaticIP.ps1"
-$taskName   = "SetStaticIPOnWiFiConnect"
-
+$taskName = "AutoStaticIP_WiFiConnect"
 # ✅ Fixed: embed current user so the task runs under the right account
 $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 

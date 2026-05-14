@@ -15,7 +15,7 @@ Invoke-ps2exe `
     -RequireAdmin `
     -Title      "Auto Static IP" `
     -Description "Auto Static IP Manager" `
-    -Version    "1.0.0"
+    -Version    "2.0.0"
 
 Write-Host ""
 Write-Host "Done! AutoStaticIP.exe created." -ForegroundColor Green

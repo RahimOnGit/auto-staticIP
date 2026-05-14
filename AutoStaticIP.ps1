@@ -2,7 +2,17 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
+# ── Paths (Works for both Script and EXE) ──────────────────────────────────────
+# ── Paths (Universal fix for PS1 and EXE) ──────────────────────────────────────
+$currentDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent (Get-Process -Id $PID).MainModule.FileName }
 
+# Check if we are accidentally in System32 (happens when running as admin script)
+if ($currentDir -like "*System32*") { $currentDir = $pwd }
+
+$workerPath = Join-Path $currentDir "Set-StaticIP.ps1"
+$configDir  = "$env:APPDATA\AutoStaticIP"
+$configPath = "$configDir\config.json"
+$taskName   = "AutoStaticIP_WiFiConnect"
 # ── Admin check ────────────────────────────────────────────────────────────────
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
@@ -509,26 +519,31 @@ $btnOn.Add_Click({
 })
 
 $btnOff.Add_Click({
+    Log "Turning OFF automation..."
+    $form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
     try {
         Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
-        $cfg = Get-Config; $cfg.Enabled = $false; Save-Config $cfg
+        $config = Get-Config
+        $config.Enabled = $false
+        Save-Config $config
+
+        # Run the reset in a way that doesn't hang the UI as hard
         $iface = (Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.Name -like "*Wi-Fi*" }).Name
         if ($iface) {
+            # Adding a tiny timeout or running via Job can help, but let's try direct first with error handling
             Set-NetIPInterface -InterfaceAlias $iface -Dhcp Enabled -ErrorAction SilentlyContinue
             Set-DnsClientServerAddress -InterfaceAlias $iface -ResetServerAddresses -ErrorAction SilentlyContinue
-            Log "Adapter '$iface' reset to DHCP."
         }
         Refresh-UI
         Log "Automation OFF."
     } catch { Log "ERROR: $_" }
+    $form.Cursor = [System.Windows.Forms.Cursors]::Default
 })
-
 $btnApply.Add_Click({
     Log "Applying static IP for current network..."
-    & powershell.exe -NonInteractive -ExecutionPolicy Bypass -File $workerPath
-    Start-Sleep -Seconds 1
-    Refresh-UI
-    Log "Done."
+   Start-Process powershell.exe -ArgumentList "-NonInteractive -ExecutionPolicy Bypass -File `"$workerPath`"" -WindowStyle Hidden -Wait
+       Refresh-UI
+       Log "Done."
 })
 
 $btnCheck.Add_Click({
